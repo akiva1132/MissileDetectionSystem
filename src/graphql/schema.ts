@@ -5,9 +5,19 @@ type Query {
   }
 
 type Statistic {
-  CountryServedMost : String
+  CountryServedMost: String
+  CountryroundssMost: String
+  CountryMissileFirst: String
+  CountryMissileLast: String
+  ListCountryes: String
+  MostAffectedArea: String
+  LeastAffectedArea: String
+  avgByarea: [Arera]
 }
-
+type Arera {
+  area:String
+  avg: String
+}
 
 `
 // type Subscription {

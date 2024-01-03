@@ -1,41 +1,177 @@
+import { AggregateGroupByReducers, AggregateSteps } from "redis";
 import { client } from "./configurations/redis"
 import { Data } from "./configurations/types";
 
 
 
 export const CountryServedMost = async () => {
-    const countryes = await client.scan(0)
-    const result:any = {}
-    for (let key of countryes.keys) {
-        const dataFromRedis = await client.json.get(key) as unknown as Data;
-        const country = key.split('-')[0]
-        if (result[country] !== undefined) {
-            result[country] += dataFromRedis.missileAmount
-        }
-        else {
-            result[country] = dataFromRedis.missileAmount
-        }
-    }
-    const maxKey =Object.keys(result).reduce((max, key) => result[key] > result[max] ? key : max, Object.keys(result)[0])
-    console.log('Key with max missiles:', maxKey)
-    return 'Key with max missiles: ' + maxKey
+    const data = await client.ft.aggregate("idx:countryes-test3", "*", {
+        STEPS: [
+            {
+                type: AggregateSteps.GROUPBY,
+                properties: "@country",
+                REDUCE: {
+                    AS: "max",
+                    property: "@missileAmount",
+                    type: AggregateGroupByReducers.SUM,
+                },
+            },
+            {
+                type: AggregateSteps.SORTBY,
+                BY: "@max",
+            },
+        ],
+    });
+    return `country is ${data.results[data.results.length - 1].country} with ${data.results[data.results.length - 1].max}`
 }
 
 
-export const CountryServedMost2 = async () => {
-    const countryes = await client.scan(0)
-    const result:any = {}
-    for (let key of countryes.keys) {
-        const dataFromRedis = await client.json.get(key) as unknown as Data;
-        const country = key.split('-')[0]
-        if (result[country] !== undefined) {
-            result[country] += dataFromRedis.rounds
+export const CountryRoundssMost = async () => {
+    const data = await client.ft.aggregate("idx:countryes-test3", "*", {
+        STEPS: [
+            {
+                type: AggregateSteps.GROUPBY,
+                properties: "@country",
+                REDUCE: {
+                    AS: "max",
+                    property: "@rounds",
+                    type: AggregateGroupByReducers.SUM,
+                },
+            },
+            {
+                type: AggregateSteps.SORTBY,
+                BY: "@max",
+            },
+        ],
+    });
+    return `country is ${data.results[data.results.length - 1].country} with ${data.results[data.results.length - 1].max}`
+}
+
+export const CountryMissileFirst = async () => {
+    const data = await client.ft.aggregate("idx:countryes-test3", "*", {
+        STEPS: [
+            {
+                type: AggregateSteps.GROUPBY,
+                properties: "@country",
+
+                REDUCE: {
+                    AS: "max",
+                    property: "@creationTime",
+                    type: AggregateGroupByReducers.SUM,
+                },
+            },
+            {
+                type: AggregateSteps.SORTBY,
+                BY: "@max",
+            },
+        ],
+    });
+
+    const date = new Date(Number(data.results[0].max))
+    return `country is ${data.results[0].country} with ${date}`
+}
+
+export const CountryMissileLast = async () => {
+    const data = await client.ft.aggregate("idx:countryes-test3", "*", {
+        STEPS: [
+            {
+                type: AggregateSteps.GROUPBY,
+                properties: "@country",
+
+                REDUCE: {
+                    AS: "max",
+                    property: "@lastUpdateTime",
+                    type: AggregateGroupByReducers.SUM,
+                },
+            },
+            {
+                type: AggregateSteps.SORTBY,
+                BY: "@max",
+            },
+        ],
+    });
+
+    const date = new Date(Number(data.results[data.results.length - 1].max))
+    return `country is ${data.results[data.results.length - 1].country} with ${date}`
+}
+
+export const ListCountryes = async () => {
+    const data = await client.ft.aggregate("idx:countryes-test3", "*", {
+        STEPS: [
+            {
+                type: AggregateSteps.GROUPBY,
+                properties: "@country",
+
+                REDUCE: {
+                    AS: "max",
+                    property: "@lastUpdateTime",
+                    type: AggregateGroupByReducers.SUM,
+                },
+            }
+        ],
+    });
+    const result = data.results.map(feild => feild.country)
+    return `countryes are ${result}`
+}
+
+export const MostAffectedArea = async () => {
+    const data = await client.keys('*');
+    const areas = data.map(key => key.split(':')[2]).filter(area => area !== undefined);
+
+    const counts: any = {};
+    let mostCommonArea;
+    let maxCount = 0;
+
+    areas.forEach((area: string) => {
+        counts[area] = (counts[area] || 0) + 1;
+
+        if (counts[area] > maxCount) {
+            maxCount = counts[area];
+            mostCommonArea = area;
         }
-        else {
-            result[country] = dataFromRedis.rounds
+    });
+    return `countryes is ${mostCommonArea}`
+}
+
+export const LeastAffectedArea = async () => {
+    const data = await client.keys('*');
+    const areas = data.map(key => key.split(':')[2]).filter(area => area !== undefined);
+
+    const counts: any = {};
+    let leastAffectedArea;
+    let minCount = Infinity;
+
+    areas.forEach((area: string) => {
+        counts[area] = (counts[area] || 0) + 1;
+
+        if (counts[area] < minCount) {
+            minCount = counts[area];
+            leastAffectedArea = area;
         }
-    }
-    const maxKey =Object.keys(result).reduce((max, key) => result[key] > result[max] ? key : max, Object.keys(result)[0])
-    console.log('Key with max missiles:', maxKey)
-    return 'Key with max missiles: ' + maxKey
+    });
+
+    return `The least affected area is ${leastAffectedArea}`;
+};
+
+export const avgByarea = async () => {
+    const data = await client.ft.aggregate("idx:countryes-test3", "*", {
+        STEPS: [
+            {
+                type: AggregateSteps.GROUPBY,
+                properties: "@area",
+                REDUCE: {
+                    AS: "avg",
+                    property: "@missileAmount",
+                    type: AggregateGroupByReducers.AVG,
+                },
+            },
+            {
+                type: AggregateSteps.SORTBY,
+                BY: "@avg",
+            },
+        ],
+    });
+    console.log(data);
+    
+    return data.results
 }

@@ -1,42 +1,23 @@
-import { CountryServedMost } from "./services";
+import { CountryServedMost, CountryRoundssMost, CountryMissileFirst, CountryMissileLast, ListCountryes, MostAffectedArea, LeastAffectedArea, avgByarea } from "./services";
 
 export const resolvers = {
     Query:{
       async statistics() {
         try {
           return {
-            CountryServedMost : await CountryServedMost()
+            CountryServedMost: await CountryServedMost(),
+            CountryroundssMost: await CountryRoundssMost(),
+            CountryMissileFirst: await CountryMissileFirst(),
+            CountryMissileLast: await CountryMissileLast(),
+            ListCountryes: await ListCountryes(),
+            MostAffectedArea: await MostAffectedArea(),
+            LeastAffectedArea: await LeastAffectedArea(),
+            avgByarea: await avgByarea(),
           }
         }
         catch (error) {
           throw error
         }
-  
       },
     },
-    // Mutation: {
-    //   async sendMessage(_: any, args: any) {
-    //     try {
-    //       const messageId = args.id || "000"
-    //       const {userName, password, atmId, amount} = args
-    //       await WithdrawalConfirmation(userName, password, atmId, amount, messageId)
-    //           return "The request has been sent for processing"
-    //     }
-    //     catch (error) {
-    //       throw error
-    //     }
-  
-    //   },
-    // },
-    // Subscription: {
-    //   withdrawal: {
-    //     subscribe: async (_: any, args: any) => {
-    //       const messageId = args.id || "000"
-    //       const {userName, password, coordinates, amount} = args
-    //       WithdrawalConfirmation(userName, password, coordinates, amount, messageId)
-    //           // return "The request has been sent for processing"
-    //       return pubsub.asyncIterator([args.id])
-    //     }
-    //   }
-    // }
   };
